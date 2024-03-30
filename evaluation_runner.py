@@ -14,8 +14,8 @@ if HF_CACHE_DIR:
 import pandas as pd
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
 from transformers import pipeline, AutoTokenizer
+from typing import Tuple
 
 
 def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, batch_size, vocab_name, level):
@@ -23,7 +23,7 @@ def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, b
     for idx in tqdm(range(0, len(questions), batch_size), desc=f'Inference {vocab_name} vocab, {level} level'):
         batch_questions = questions[idx: idx + batch_size]
         batch_questions_with_template = [to_instruct_template(question, tokenizer) for question in batch_questions]
-        batch_predictions = pipeline(batch_questions_with_template, candidate_labels)
+        batch_predictions = pipeline(batch_questions_with_template, candidate_labels, max_new_tokens=1, temperature=0)
         predictions.extend(batch_predictions)
     return predictions
 
@@ -44,14 +44,30 @@ def process_vocabulary(data, tokenizer, question_column, answer_id_column, zero_
         for level in levels:
             query = f"vocab=='{vocab}' & level=='{level}'"
             vocab_level_data = data.query(query)
+            answer_ids = vocab_level_data[answer_id_column].tolist()
+            mapping = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
+            vocab_level_data[question_column] = vocab_level_data[question_column].apply(
+                lambda question: question.replace("1. ", "A) ").replace("2. ", "B) ").replace("3. ", "C) ").replace("4. ", "D) "))
+
+            answer_ids = [mapping[value] for value in answer_ids]
+            vocab_level_data['answer_id'] = answer_ids
+            few_shot_examples_prompt, vocab_level_data = create_few_shot_example(df=vocab_level_data, shots_num=4)
             total_examples = vocab_level_data.shape[0]
-            train_data, test_data = train_test_split(vocab_level_data, test_size=min(total_examples, 1_000))
+            test_data = vocab_level_data.sample(n=min(total_examples, 1000))
 
             sampled_questions = test_data[question_column].tolist()
-            answer_ids = test_data[answer_id_column].tolist()
-            predictions = zero_shot_classification(zero_shot_pipeline, tokenizer, sampled_questions, [1, 2, 3, 4],
+            prefix = "Answer A,B,C,D according the answer to this multiple choice question.\n"
+            suffix = "Answer:"
+            sampled_questions_full_prompt = [prefix + few_shot_examples_prompt + "\n" + question.replace("  ", "") + suffix for question
+                                             in sampled_questions]
+
+
+            predictions = zero_shot_classification(zero_shot_pipeline, tokenizer, sampled_questions_full_prompt,
+                                                   ['A', 'B', 'C', 'D'],
                                                    batch_size, vocab_name=vocab, level=level)
+            answer_ids = test_data[answer_id_column].tolist()
             accuracy = accuracy_score(answer_ids, [pred['labels'][0] for pred in predictions])
+            print(f"vocab={vocab}, level={level}, accuracy={accuracy}")
             report = classification_report(answer_ids, [pred['labels'][0] for pred in predictions], output_dict=True)
 
             result = {
@@ -65,6 +81,18 @@ def process_vocabulary(data, tokenizer, question_column, answer_id_column, zero_
             results.append(result)
 
     return results
+
+
+def create_few_shot_example(df: pd.DataFrame, shots_num: int) -> Tuple[str, pd.DataFrame]:
+    shot_examples = df.head(shots_num)
+    df = df.iloc[shots_num:]
+    final_shot_prompt = ""
+    for _, example in shot_examples.iterrows():
+        question = example["question"]
+        answer_id = example["answer_id"]
+        example_prompt = f"{question}Answer:{answer_id}\n".replace("  ", "")
+        final_shot_prompt += example_prompt
+    return final_shot_prompt, df
 
 
 def main(model_id, dataset_name, output_results_dir_path):
@@ -90,8 +118,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--dataset_name", type=str, default="ofir408/try1",
                         help="Name of the dataset to load using load_dataset", required=False)
-    parser.add_argument("--output_results_dir_path", type=str, help="Path to store the results CSV files",
-                        default="results.csv", required=False)
+    parser.add_argument("--output_results_dir_path", type=str, help="Directory path to store the results CSV files",
+                        default="results", required=False)
     args = parser.parse_args()
 
     main(args.model_id, args.dataset_name, args.output_results_dir_path)
