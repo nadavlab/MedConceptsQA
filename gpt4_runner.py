@@ -3,8 +3,6 @@ import os
 import warnings
 
 warnings.filterwarnings("ignore", message="Length of IterableDataset.*")
-import torch
-from tqdm import tqdm
 
 HF_CACHE_DIR = '/sise/nadav-group/nadavrap-group/ofir/hf_cache'  # can be None if you don't want to use custom cache dir.
 if HF_CACHE_DIR:
@@ -14,32 +12,54 @@ if HF_CACHE_DIR:
 import pandas as pd
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, classification_report
-from transformers import pipeline, AutoTokenizer
+
+import openai
+from tqdm import tqdm
+
+tqdm.pandas()
+
+client = openai.OpenAI(api_key=os.environ.get("OPEN_AI_KEY"))
 
 
-def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, batch_size, vocab_name, level):
+def call_openai(model_id, prompt: str) -> str:
+    response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model=model_id,
+    )
+    print(response)
+    gpt_final_response = response.choices[0].message.content
+    print(f"response={gpt_final_response}")
+    return gpt_final_response
+
+
+def parse_gpt_response(gpt_response: str) -> str:
+    return gpt_response.split(".")[0].replace(" ", "")
+
+
+def zero_shot_classification(model_id, questions, vocab_name, level):
     predictions = []
-    for idx in tqdm(range(0, len(questions), batch_size), desc=f'Inference {vocab_name} vocab, {level} level'):
-        batch_questions = questions[idx: idx + batch_size]
-        batch_questions_with_template = [to_instruct_template(question, tokenizer) for question in batch_questions]
-        batch_predictions = pipeline(batch_questions_with_template, candidate_labels, max_new_tokens=1, temperature=0)
-        predictions.extend(batch_predictions)
+    for question in tqdm(questions, desc=f'Inference {vocab_name} vocab, {level} level'):
+        gpt_response = call_openai(model_id=model_id, prompt=question)
+        try:
+            final_prediction = parse_gpt_response(gpt_response)
+            predictions.append(final_prediction)
+        except Exception as e:
+            print(f"failed to parse gpt_response={gpt_response}, exception={e}")
     return predictions
 
 
-def to_instruct_template(text, tokenizer):
-    messages = [
-        {"role": "system", "content": "Answer the multiple-choice question about medical knowledge.\n\n"},
-        {"role": "user", "content": text},
-    ]
-    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-
-def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenizer, question_column, answer_id_column, zero_shot_pipeline, batch_size,
-                                 shots_num, total_eval_examples_num):
+def process_vocabulary(model_id, data: pd.DataFrame, few_shot_data: pd.DataFrame, question_column, answer_id_column,
+                       shots_num: int,
+                       total_eval_examples_num: int):
     vocabularies = data['vocab'].unique()
     levels = data['level'].unique()
     results = []
+
     for vocab in vocabularies:
         for level in levels:
             query = f"vocab=='{vocab}' & level=='{level}'"
@@ -56,21 +76,23 @@ def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenize
                 prefix + few_shot_examples_prompt +
                 ("\n" if len(few_shot_examples_prompt) > 0 else "") + question + suffix for question
                 in sampled_questions]
-            predictions = zero_shot_classification(zero_shot_pipeline, tokenizer, sampled_questions_full_prompt,
-                                                   ['A', 'B', 'C', 'D'],
-                                                   batch_size, vocab_name=vocab, level=level)
+            predictions = zero_shot_classification(model_id, sampled_questions_full_prompt, vocab, level)
             answer_ids = test_data[answer_id_column].tolist()
-            accuracy = accuracy_score(answer_ids, [pred['labels'][0] for pred in predictions])
+            accuracy = accuracy_score(answer_ids, predictions)
             print(f"vocab={vocab}, level={level}, accuracy={accuracy}")
-            report = classification_report(answer_ids, [pred['labels'][0] for pred in predictions], output_dict=True)
+            report = classification_report(answer_ids, predictions, output_dict=True)
 
             result = {
-                'Model': zero_shot_pipeline.model.config.name_or_path,
-                'Level': level,
+                'Model': model_id,
                 'Vocabulary': vocab,
+                'Level': level,
                 'Accuracy': accuracy,
                 'Num_Samples': len(sampled_questions),
-                'Classification_Report': report
+                'Shots_num': shots_num,
+                'Classification_Report': report,
+                'Answers': answer_ids,
+                'Predictions': predictions,
+                'Sampled_questions': sampled_questions_full_prompt
             }
             results.append(result)
 
@@ -95,19 +117,19 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print('Loading the dataset..')
     dataset = load_dataset(dataset_name, cache_dir=HF_CACHE_DIR)
     print(f'Done to load the dataset. Dataset={dataset}')
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    zero_shot_pipeline = pipeline("zero-shot-classification", model=model_id,
-                                  device_map='auto', torch_dtype=torch.bfloat16)
-    # results = process_vocabulary(dataset['train'], tokenizer, 'question', 'answer_id', zero_shot_pipeline, batch_size=1)
-    results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(), tokenizer=tokenizer,
-                                 question_column='question', answer_id_column='answer_id', zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
+    results = process_vocabulary(model_id, dataset['train'].to_pandas(), dataset["dev"].to_pandas(),
+                                 'question', 'answer_id',
                                  shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
 
     df = pd.DataFrame(results)
+    sorting_order = ['easy', 'medium', 'hard']
+    df['Level'] = pd.Categorical(df['Level'], categories=sorting_order, ordered=True)
+    df = df.sort_values(by=['Vocabulary', 'Level'])
+
     print(f"results={df}")
     os.makedirs(f"{output_results_dir_path}/{model_id}", exist_ok=True)
     print(f'writing results to dir_path={output_results_dir_path}')
-    results_csv_path = f"{output_results_dir_path}/{model_id}/results_with_system_prompt.csv" if output_results_dir_path is not None else "results_with_system_prompt.csv"
+    results_csv_path = f"{output_results_dir_path}/{model_id}/result3.csv" if output_results_dir_path is not None else "results3.csv"
     df.to_csv(results_csv_path, index=False)
 
 
