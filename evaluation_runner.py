@@ -15,7 +15,7 @@ import pandas as pd
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, classification_report
 from transformers import pipeline, AutoTokenizer
-
+import random
 
 def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, batch_size, vocab_name, level):
     predictions = []
@@ -29,7 +29,7 @@ def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, b
 
 def to_instruct_template(text, tokenizer):
     messages = [
-        {"role": "system", "content": "Answer the multiple-choice question about medical knowledge.\n\n"},
+        # {"role": "system", "content": "Answer the multiple-choice question about medical knowledge.\n\n"},
         {"role": "user", "content": text},
     ]
     return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -70,7 +70,11 @@ def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenize
                 'Vocabulary': vocab,
                 'Accuracy': accuracy,
                 'Num_Samples': len(sampled_questions),
-                'Classification_Report': report
+                'Classification_Report': report,
+                'Shots_num': shots_num,
+                'Answers': answer_ids,
+                'Predictions': predictions,
+                'Sampled_questions': sampled_questions_full_prompt
             }
             results.append(result)
 
@@ -97,8 +101,7 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print(f'Done to load the dataset. Dataset={dataset}')
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     zero_shot_pipeline = pipeline("zero-shot-classification", model=model_id,
-                                  device_map='auto', torch_dtype=torch.bfloat16)
-    # results = process_vocabulary(dataset['train'], tokenizer, 'question', 'answer_id', zero_shot_pipeline, batch_size=1)
+                                  device='cuda:0', torch_dtype=torch.bfloat16)
     results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(), tokenizer=tokenizer,
                                  question_column='question', answer_id_column='answer_id', zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
                                  shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
@@ -107,7 +110,9 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print(f"results={df}")
     os.makedirs(f"{output_results_dir_path}/{model_id}", exist_ok=True)
     print(f'writing results to dir_path={output_results_dir_path}')
-    results_csv_path = f"{output_results_dir_path}/{model_id}/results_with_system_prompt.csv" if output_results_dir_path is not None else "results_with_system_prompt.csv"
+    rand_num = random.randint(1, 1000)
+
+    results_csv_path = f"{output_results_dir_path}/{model_id}/results_{rand_num}.csv" if output_results_dir_path is not None else f"results_{rand_num}.csv"
     df.to_csv(results_csv_path, index=False)
 
 
