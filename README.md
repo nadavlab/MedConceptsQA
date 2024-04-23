@@ -11,7 +11,7 @@ Replace `MODEL_ID` with the model name (HuggingFace) or local path to the pretra
 
 Replace `OUTPUT_RESULTS_DIR_PATH` with the directory path to store the results CSV file.
 
-Replace `SHOTS_NUM` with the number of shots. default is 4. For zero-shot learning, use 0. 
+Replace `SHOTS_NUM` with the number of shots. The default is 4. For zero-shot learning, use 0. 
 
 
 **Few-shot evaluation**: 
@@ -25,7 +25,7 @@ Replace `SHOTS_NUM` with the number of shots. default is 4. For zero-shot learni
 
 **Run GPT benchmark evaluation**:
 
-SET `OPENAI_API_KEY` as en environment variable with your OpenAI key and then run with:
+SET `OPENAI_API_KEY` as an environment variable with your OpenAI key and then run with:
 ```
 python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 4 --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/
 ```
@@ -36,6 +36,7 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 
 
 **MedConceptsQA Results**: 
+
 *Zero-shot*:
 
 | model                                   | mean_accuracy | ci   |
@@ -56,5 +57,20 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 
 *Few-shot*:
 
+| model                                   | mean_accuracy | ci   |
+|-----------------------------------------|---------------|------|
+| gpt-4-0125-preview                      | **61.911**        | 2.320|
+| gpt-3.5-turbo                           | 41.476        | 2.481|
+| meta-llama/Meta-Llama-3-8B-Instruct     | 25.653        | 2.707|
+| johnsnowlabs/JSL-MedMNX-7B              | 25.627        | 2.497|
+| yikuan8/Clinical-Longformer             | 25.547        | 3.495|
+| dmis-lab/biobert-v1.1                   | 25.458        | 2.649|
+| epfl-llm/meditron-70b                   | 25.262        | 3.499|
+| BioMistral/BioMistral-7B-DARE           | 25.058        | 2.676|
+| HuggingFaceH4/zephyr-7b-beta            | 25.058        | 2.121|
+| dmis-lab/meerkat-7b-v1.0                | 24.942        | 2.879|
+| PharMolix/BioMedGPT-LM-7B               | 24.924        | 3.363|
+| epfl-llm/meditron-7b                    | 23.787        | 3.496|
 
-If you wish to submit your model for evaluation, please open us a GitHub issue with your model's Hugging Face name.
+
+If you wish to submit your model for evaluation, please open us a GitHub issue with your model's HuggingFace name.
