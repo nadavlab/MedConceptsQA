@@ -90,7 +90,7 @@ def create_few_shot_example(df: pd.DataFrame, shots_num: int) -> str:
     for _, example in shot_examples.iterrows():
         question = example["question"]
         answer_id = example["answer_id"]
-        example_prompt = f"{question}Answer:{answer_id}\n\n".replace("  ", "")
+        example_prompt = f"{question}\nAnswer:{answer_id}\n\n".replace("  ", "")
         final_shot_prompt += example_prompt
     return final_shot_prompt
 
@@ -101,7 +101,7 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print(f'Done to load the dataset. Dataset={dataset}')
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     zero_shot_pipeline = pipeline("zero-shot-classification", model=model_id,
-                                  device='cuda:0', torch_dtype=torch.bfloat16)
+                                  device='auto', trust_remote_code=True, torch_dtype=torch.bfloat16)
     results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(), tokenizer=tokenizer,
                                  question_column='question', answer_id_column='answer_id', zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
                                  shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
@@ -110,7 +110,7 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print(f"results={df}")
     os.makedirs(f"{output_results_dir_path}/{model_id}", exist_ok=True)
     print(f'writing results to dir_path={output_results_dir_path}')
-    rand_num = random.randint(1, 1000)
+    rand_num = random.randint(1, 10000000)
 
     results_csv_path = f"{output_results_dir_path}/{model_id}/results_{rand_num}.csv" if output_results_dir_path is not None else f"results_{rand_num}.csv"
     df.to_csv(results_csv_path, index=False)
@@ -119,7 +119,6 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process dataset for zero-shot classification")
     parser.add_argument("--model_id", type=str, help="The model name to evaluate", required=True)
-
     parser.add_argument("--dataset_name", type=str, default="ofir408/try1_v2",
                         help="Name of the dataset to load using load_dataset", required=False)
     parser.add_argument("--output_results_dir_path", type=str, help="Directory path to store the results CSV files",
@@ -128,7 +127,7 @@ if __name__ == "__main__":
                         default=4, required=False)
     parser.add_argument("--total_eval_examples_num", type=int,
                         help="Number of examples for evaluation per dataset",
-                        default=5, required=False)
+                        default=250, required=False)
 
     args = parser.parse_args()
 
