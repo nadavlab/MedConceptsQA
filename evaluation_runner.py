@@ -101,7 +101,7 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
     print(f'Done to load the dataset. Dataset={dataset}')
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     zero_shot_pipeline = pipeline("zero-shot-classification", model=model_id,
-                                  device='auto', trust_remote_code=True, torch_dtype=torch.bfloat16)
+                                  device_map='auto', trust_remote_code=True, torch_dtype=torch.bfloat16)
     results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(), tokenizer=tokenizer,
                                  question_column='question', answer_id_column='answer_id', zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
                                  shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
