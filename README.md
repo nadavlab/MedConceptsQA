@@ -35,7 +35,7 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 ```
 
 
-**MedConceptsQA Results**: 
+## Leaderboard:
 
 *Zero-shot*:
 

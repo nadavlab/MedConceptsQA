@@ -23,7 +23,8 @@ def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, b
         batch_questions = questions[idx: idx + batch_size]
         batch_questions_with_template = [to_instruct_template(question, tokenizer) for question in batch_questions]
         batch_predictions = pipeline(batch_questions_with_template, candidate_labels, max_new_tokens=1, temperature=0)
-        predictions.extend(batch_predictions)
+        predicted_labels = [prediction['labels'][0] for prediction in batch_predictions]
+        predictions.extend(predicted_labels)
     return predictions
 
 
@@ -60,9 +61,9 @@ def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenize
                                                    ['A', 'B', 'C', 'D'],
                                                    batch_size, vocab_name=vocab, level=level)
             answer_ids = test_data[answer_id_column].tolist()
-            accuracy = accuracy_score(answer_ids, [pred['labels'][0] for pred in predictions])
+            accuracy = accuracy_score(answer_ids, predictions)
             print(f"vocab={vocab}, level={level}, accuracy={accuracy}")
-            report = classification_report(answer_ids, [pred['labels'][0] for pred in predictions], output_dict=True)
+            report = classification_report(answer_ids, predictions, output_dict=True)
 
             result = {
                 'Model': zero_shot_pipeline.model.config.name_or_path,
@@ -130,5 +131,4 @@ if __name__ == "__main__":
                         default=250, required=False)
 
     args = parser.parse_args()
-
     main(args.model_id, args.dataset_name, args.output_results_dir_path, args.shots_num, args.total_eval_examples_num)

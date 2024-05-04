@@ -5,3 +5,5 @@ tqdm
 pandas
 datasets
 scikit-learn
+pyhealth
+networkx
