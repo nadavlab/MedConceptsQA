@@ -5,13 +5,15 @@ pip install -r requirements.txt
 
 Run the benchmark evaluation:
 ```
-python evaluation_runner.py --model_id MODEL_ID --output_results_dir_path OUTPUT_RESULTS_DIR_PATH --shots_num SHOTS_NUM 
+python evaluation_runner.py --model_id MODEL_ID --output_results_dir_path OUTPUT_RESULTS_DIR_PATH --shots_num SHOTS_NUM --total_num_experiments NUM_EXPERIMENTS
 ```
 Replace `MODEL_ID` with the model name (HuggingFace) or local path to the pretrained model you want to evaluate.
 
 Replace `OUTPUT_RESULTS_DIR_PATH` with the directory path to store the results CSV file.
 
 Replace `SHOTS_NUM` with the number of shots. The default is 4. For zero-shot learning, use 0. 
+
+Replace `NUM_EXPERIMENTS` with the number of experiments to use for calculating the 95% condifence intervals. The default is 1.
 
 
 **Few-shot evaluation**: 

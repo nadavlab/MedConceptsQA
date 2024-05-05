@@ -138,7 +138,7 @@ def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process dataset for zero-shot classification")
     parser.add_argument("--model_id", type=str, help="The model name to evaluate", required=True)
-    parser.add_argument("--dataset_name", type=str, default="ofir408/try1_v2",
+    parser.add_argument("--dataset_name", type=str, default="ofir408/MedConceptsQA",
                         help="Name of the dataset to load using load_dataset", required=False)
     parser.add_argument("--output_results_dir_path", type=str, help="Directory path to store the results CSV files",
                         default="results", required=False)

@@ -5,17 +5,11 @@ import warnings
 warnings.filterwarnings("ignore", message="Length of IterableDataset.*")
 import torch
 from tqdm import tqdm
-
-HF_CACHE_DIR = '/sise/nadav-group/nadavrap-group/ofir/hf_cache'  # can be None if you don't want to use custom cache dir.
-if HF_CACHE_DIR:
-    os.environ['TRANSFORMERS_CACHE'] = HF_CACHE_DIR
-    os.environ['HF_HOME'] = HF_CACHE_DIR
-
 import pandas as pd
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, classification_report
 from transformers import pipeline, AutoTokenizer
-import random
+
 
 def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, batch_size, vocab_name, level):
     predictions = []
@@ -30,14 +24,14 @@ def zero_shot_classification(pipeline, tokenizer, questions, candidate_labels, b
 
 def to_instruct_template(text, tokenizer):
     messages = [
-        # {"role": "system", "content": "Answer the multiple-choice question about medical knowledge.\n\n"},
         {"role": "user", "content": text},
     ]
     return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
 
-def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenizer, question_column, answer_id_column, zero_shot_pipeline, batch_size,
-                                 shots_num, total_eval_examples_num):
+def process_vocabulary(data: pd.DataFrame, few_shot_data: pd.DataFrame, tokenizer, question_column, answer_id_column,
+                       zero_shot_pipeline, batch_size,
+                       shots_num, total_eval_examples_num):
     vocabularies = data['vocab'].unique()
     levels = data['level'].unique()
     results = []
@@ -96,31 +90,32 @@ def create_few_shot_example(df: pd.DataFrame, shots_num: int) -> str:
     return final_shot_prompt
 
 
-def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_examples_num):
+def main(model_id, dataset_name, output_results_dir_path, shots_num, total_eval_examples_num, total_num_experiments):
     print('Loading the dataset..')
-    dataset = load_dataset(dataset_name, cache_dir=HF_CACHE_DIR)
+    dataset = load_dataset(dataset_name)
     print(f'Done to load the dataset. Dataset={dataset}')
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     zero_shot_pipeline = pipeline("zero-shot-classification", model=model_id,
                                   device_map='auto', trust_remote_code=True, torch_dtype=torch.bfloat16)
-    results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(), tokenizer=tokenizer,
-                                 question_column='question', answer_id_column='answer_id', zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
-                                 shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
+    for experiments_number in range(total_num_experiments):
+        results = process_vocabulary(data=dataset['train'].to_pandas(), few_shot_data=dataset["dev"].to_pandas(),
+                                     tokenizer=tokenizer,
+                                     question_column='question', answer_id_column='answer_id',
+                                     zero_shot_pipeline=zero_shot_pipeline, batch_size=1,
+                                     shots_num=shots_num, total_eval_examples_num=total_eval_examples_num)
 
-    df = pd.DataFrame(results)
-    print(f"results={df}")
-    os.makedirs(f"{output_results_dir_path}/{model_id}", exist_ok=True)
-    print(f'writing results to dir_path={output_results_dir_path}')
-    rand_num = random.randint(1, 10000000)
-
-    results_csv_path = f"{output_results_dir_path}/{model_id}/results_{rand_num}.csv" if output_results_dir_path is not None else f"results_{rand_num}.csv"
-    df.to_csv(results_csv_path, index=False)
+        df = pd.DataFrame(results)
+        print(f"results={df}")
+        os.makedirs(f"{output_results_dir_path}/{model_id}", exist_ok=True)
+        print(f'writing results to dir_path={output_results_dir_path}')
+        results_csv_path = f"{output_results_dir_path}/{model_id}/results_{experiments_number}.csv" if output_results_dir_path is not None else f"results_{experiments_number}.csv"
+        df.to_csv(results_csv_path, index=False)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process dataset for zero-shot classification")
     parser.add_argument("--model_id", type=str, help="The model name to evaluate", required=True)
-    parser.add_argument("--dataset_name", type=str, default="ofir408/try1_v2",
+    parser.add_argument("--dataset_name", type=str, default="ofir408/MedConceptsQA",
                         help="Name of the dataset to load using load_dataset", required=False)
     parser.add_argument("--output_results_dir_path", type=str, help="Directory path to store the results CSV files",
                         default="results", required=False)
@@ -129,6 +124,10 @@ if __name__ == "__main__":
     parser.add_argument("--total_eval_examples_num", type=int,
                         help="Number of examples for evaluation per dataset",
                         default=250, required=False)
+    parser.add_argument("--total_num_experiments", type=int,
+                        help="Number of experiments to run for calculating 95% confidence intervals.",
+                        default=1, required=False)
 
     args = parser.parse_args()
-    main(args.model_id, args.dataset_name, args.output_results_dir_path, args.shots_num, args.total_eval_examples_num)
+    main(args.model_id, args.dataset_name, args.output_results_dir_path, args.shots_num, args.total_eval_examples_num,
+         args.total_num_experiments)
