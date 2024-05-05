@@ -1,3 +1,7 @@
+The benchmark is available at: `https://huggingface.co/datasets/ofir408/MedConceptsQA`
+
+**How To Run?**
+
 Install the required dependencies:
 ```
 pip install -r requirements.txt
