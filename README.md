@@ -1,4 +1,4 @@
-The benchmark is available at: `https://huggingface.co/datasets/ofir408/MedConceptsQA`
+The benchmark is available at [https://huggingface.co/datasets/ofir408/MedConceptsQA](https://huggingface.co/datasets/ofir408/MedConceptsQA).
 
 **How To Run?**
 
