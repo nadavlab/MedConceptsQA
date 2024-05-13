@@ -21,12 +21,15 @@ Replace `NUM_EXPERIMENTS` with the number of experiments to use for calculating 
 
 
 **Few-shot evaluation**: 
-
-`python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/ --shots_num 4`
+```
+python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/ --shots_num 4```
+```
 
 **Zero-shot evaluation**:
  
-`python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/zero_shot/250_examples/ --shots_num 0`
+```
+python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/zero_shot/250_examples/ --shots_num 0
+```
 
 
 **Run GPT benchmark evaluation**:
