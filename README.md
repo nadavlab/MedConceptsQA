@@ -1,5 +1,16 @@
 The benchmark is available at [https://huggingface.co/datasets/ofir408/MedConceptsQA](https://huggingface.co/datasets/ofir408/MedConceptsQA).
 
+If you use MedConceptsQA or find this repository useful for your research or work, please cite us using the following citation:
+```
+@article{shoham2024medconceptsqa,
+  title={MedConceptsQA--Open Source Medical Concepts QA Benchmark},
+  author={Shoham, Ofir Ben and Rappoport, Nadav},
+  journal={arXiv preprint arXiv:2405.07348},
+  year={2024}
+}
+```
+
+
 **How To Run?**
 
 Install the required dependencies:
@@ -22,7 +33,7 @@ Replace `NUM_EXPERIMENTS` with the number of experiments to use for calculating 
 
 **Few-shot evaluation**: 
 ```
-python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/ --shots_num 4```
+python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/ --shots_num 4
 ```
 
 **Zero-shot evaluation**:
