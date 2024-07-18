@@ -15,12 +15,14 @@ If you use MedConceptsQA or find this repository useful for your research or wor
 
 Install the required dependencies:
 ```
-pip install -r requirements.txt
+git clone https://github.com/EleutherAI/lm-evaluation-harness
+cd lm-evaluation-harness
+pip install -e .
 ```
 
 Run the benchmark evaluation:
 ```
-python evaluation_runner.py --model_id MODEL_ID --output_results_dir_path OUTPUT_RESULTS_DIR_PATH --shots_num SHOTS_NUM --total_num_experiments NUM_EXPERIMENTS
+lm_eval --model hf --model_args pretrained=MODEL_ID --tasks med_concepts_qa --device cuda:0 --num_fewshot SHOTS_NUM --batch_size auto --limit 250 --output_path OUTPUT_RESULTS_DIR_PATH
 ```
 Replace `MODEL_ID` with the model name (HuggingFace) or local path to the pretrained model you want to evaluate.
 
@@ -28,22 +30,22 @@ Replace `OUTPUT_RESULTS_DIR_PATH` with the directory path to store the results C
 
 Replace `SHOTS_NUM` with the number of shots. The default is 4. For zero-shot learning, use 0. 
 
-Replace `NUM_EXPERIMENTS` with the number of experiments to use for calculating the 95% condifence intervals. The default is 1.
-
-
 **Few-shot evaluation**: 
 ```
-python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/few_shot/250_examples/ --shots_num 4
+lm_eval --model hf --model_args pretrained=BioMistral/BioMistral-7B-DARE --tasks med_concepts_qa --device cuda:0 --num_fewshot 4 --batch_size auto --limit 250 --output_path  results/few_shot/250_examples/
 ```
 
 **Zero-shot evaluation**:
  
 ```
-python evaluation_runner.py --model_id BioMistral/BioMistral-7B-DARE --total_eval_examples_num 250 --output_results_dir_path results/zero_shot/250_examples/ --shots_num 0
+lm_eval --model hf --model_args pretrained=BioMistral/BioMistral-7B-DARE --tasks med_concepts_qa --device cuda:0 --num_fewshot 0 --batch_size auto --limit 250 --output_path  results/few_shot/250_examples/
 ```
 
 
 **Run GPT benchmark evaluation**:
+
+Install the requirements:
+`pip install -r requirements.txt`
 
 SET `OPENAI_API_KEY` as an environment variable with your OpenAI key and then run with:
 ```
@@ -59,38 +61,44 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 
 *Zero-shot*:
 
-| model                                   | mean_accuracy | ci   |
-|-----------------------------------------|---------------|------|
-| gpt-4-0125-preview                      | **52.489**        | 3.135|
-| gpt-3.5-turbo                           | 37.058        | 2.399|
-| dmis-lab/biobert-v1.1                   | 26.151        | 3.571|
-| meta-llama/Meta-Llama-3-8B-Instruct     | 25.840        | 6.199|
-| epfl-llm/meditron-7b                    | 25.751        | 3.340|
-| dmis-lab/meerkat-7b-v1.0                | 25.680        | 3.983|
-| HuggingFaceH4/zephyr-7b-beta            | 25.538        | 3.075|
-| epfl-llm/meditron-70b                   | 25.360        | 2.630|
-| yikuan8/Clinical-Longformer             | 25.040        | 2.406|
-| UFNLP/gatortron-medium                  | 24.862        | 3.170|
-| PharMolix/BioMedGPT-LM-7B               | 24.747        | 4.219|
-| BioMistral/BioMistral-7B-DARE           | 24.569        | 3.867|
-| johnsnowlabs/JSL-MedMNX-7B              | 24.427        | 3.185|
+| Model Name                                | Accuracy | CI    |
+|-------------------------------------------|----------|-------|
+| gpt-4-0125-preview                        |**52.489**   | 3.573 |
+| meta-llama/Meta-Llama-3-70B-Instruct      | 47.076   | 3.572 |
+| aaditya/Llama3-OpenBioLLM-70B             | 41.849   | 3.53  |
+| gpt-3.5-turbo                             | 37.058   | 3.456 |
+| meta-llama/Meta-Llama-3-8B-Instruct       | 34.8     | 3.409 |
+| aaditya/Llama3-OpenBioLLM-8B              | 29.431   | 3.262 |
+| johnsnowlabs/JSL-MedMNX-7B                | 28.649   | 3.235 |
+| epfl-llm/meditron-70b                     | 28.133   | 3.218 |
+| dmis-lab/meerkat-7b-v1.0                  | 27.982   | 3.213 |
+| BioMistral/BioMistral-7B-DARE             | 26.836   | 3.171 |
+| epfl-llm/meditron-7b                      | 26.107   | 3.143 |
+| dmis-lab/biobert-v1.1                     | 25.636   | 3.125 |
+| UFNLP/gatortron-large                     | 25.298   | 3.111 |
+| PharMolix/BioMedGPT-LM-7B                 | 24.924   | 3.095 |
+
+
 
 *Few-shot*:
 
-| model                                   | mean_accuracy | ci   |
-|-----------------------------------------|---------------|------|
-| gpt-4-0125-preview                      | **61.911**        | 2.320|
-| gpt-3.5-turbo                           | 41.476        | 2.481|
-| meta-llama/Meta-Llama-3-8B-Instruct     | 25.653        | 2.707|
-| johnsnowlabs/JSL-MedMNX-7B              | 25.627        | 2.497|
-| yikuan8/Clinical-Longformer             | 25.547        | 3.495|
-| dmis-lab/biobert-v1.1                   | 25.458        | 2.649|
-| epfl-llm/meditron-70b                   | 25.262        | 3.499|
-| BioMistral/BioMistral-7B-DARE           | 25.058        | 2.676|
-| HuggingFaceH4/zephyr-7b-beta            | 25.058        | 2.121|
-| dmis-lab/meerkat-7b-v1.0                | 24.942        | 2.879|
-| PharMolix/BioMedGPT-LM-7B               | 24.924        | 3.363|
-| epfl-llm/meditron-7b                    | 23.787        | 3.496|
+| Model Name                                | Accuracy | CI    |
+|-------------------------------------------|----------|-------|
+| gpt-4-0125-preview                        | **61.911**   | 3.475 |
+| meta-llama/Meta-Llama-3-70B-Instruct      | 57.867   | 3.534 |
+| aaditya/Llama3-OpenBioLLM-70B             | 53.387   | 3.57  |
+| gpt-3.5-turbo                             | 41.476   | 3.526 |
+| meta-llama/Meta-Llama-3-8B-Instruct       | 40.693   | 3.516 |
+| aaditya/Llama3-OpenBioLLM-8B              | 35.316   | 3.421 |
+| epfl-llm/meditron-70b                     | 34.809   | 3.409 |
+| johnsnowlabs/JSL-MedMNX-7B                | 32.436   | 3.35  |
+| BioMistral/BioMistral-7B-DARE             | 28.702   | 3.237 |
+| PharMolix/BioMedGPT-LM-7B                 | 28.204   | 3.22  |
+| dmis-lab/meerkat-7b-v1.0                  | 28.187   | 3.219 |
+| epfl-llm/meditron-7b                      | 26.231   | 3.148 |
+| dmis-lab/biobert-v1.1                     | 25.982   | 3.138 |
+| UFNLP/gatortron-large                     | 25.093   | 3.102 |
+
 
 
 If you wish to submit your model for evaluation, please open us a GitHub issue with your model's HuggingFace name.
