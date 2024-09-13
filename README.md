@@ -1,12 +1,19 @@
 The benchmark is available at [https://huggingface.co/datasets/ofir408/MedConceptsQA](https://huggingface.co/datasets/ofir408/MedConceptsQA).
 
+The paper is available at [https://www.sciencedirect.com/science/article/pii/S0010482524011740](https://www.sciencedirect.com/science/article/pii/S0010482524011740).
+
 If you use MedConceptsQA or find this repository useful for your research or work, please cite us using the following citation:
 ```
-@article{shoham2024medconceptsqa,
-  title={MedConceptsQA--Open Source Medical Concepts QA Benchmark},
-  author={Shoham, Ofir Ben and Rappoport, Nadav},
-  journal={arXiv preprint arXiv:2405.07348},
-  year={2024}
+@article{SHOHAM2024109089,
+title = {MedConceptsQA: Open source medical concepts QA benchmark},
+journal = {Computers in Biology and Medicine},
+volume = {182},
+pages = {109089},
+year = {2024},
+issn = {0010-4825},
+doi = {https://doi.org/10.1016/j.compbiomed.2024.109089},
+url = {https://www.sciencedirect.com/science/article/pii/S0010482524011740},
+author = {Ofir Ben Shoham and Nadav Rappoport}
 }
 ```
 
