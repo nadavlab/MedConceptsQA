@@ -7,3 +7,4 @@ datasets
 scikit-learn
 pyhealth
 networkx
+pydantic
