@@ -72,6 +72,7 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 |-------------------------------------------|----------|-------|
 | gpt-4-0125-preview                        |**52.489**   | 2.064 |
 | meta-llama/Meta-Llama-3.1-70B-Instruct	   | 48.471   | 2.065 |
+| HPAI-BSC/Qwen2.5-Aloe-Beta-72B            | 48.347   | 2.065 |
 | m42-health/Llama3-Med42-70B	              | 47.093	  | 2.062 |
 | meta-llama/Meta-Llama-3-70B-Instruct      | 47.076   | 2.062 |
 | aaditya/Llama3-OpenBioLLM-70B             | 41.849   | 2.039 |
@@ -113,6 +114,8 @@ python gpt4_runner.py --model_id gpt-4-0125-preview --shots_num 0 --total_eval_e
 | epfl-llm/meditron-7b                      | 26.231   | 3.148 |
 | dmis-lab/biobert-v1.1                     | 25.982   | 3.138 |
 | UFNLP/gatortron-large                     | 25.093   | 3.102 |
+| HPAI-BSC/Qwen2.5-Aloe-Beta-72B            | 25.058   | 3.101 |
+
 
 
 
